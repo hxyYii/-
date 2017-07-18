@@ -1,0 +1,39 @@
+import requests
+from bs4 import BeautifulSoup
+from pprint import pprint
+from requests.exceptions import RequestException
+import re
+import json
+import pandas
+content = []
+def get_one_page(url):
+    resp = requests.get(url)
+    soup = BeautifulSoup(resp.text,'lxml')
+    indexs = soup.select('i.board-index.board-index')
+    titles = soup.select(' p.name > a')
+    stars = soup.select('p.star')
+    times = soup.select('p.releasetime')
+    scores1 = soup.select('i.integer')
+    scores2 = soup.select('i.fraction')
+    imgs = soup.select('img.board-img')
+    for index,title,star,time,img,score1,score2 in zip(indexs,titles,stars,times,imgs,scores1,scores2):
+        data = {
+            '索引' :index.get_text(),
+            '电影':title.get_text(),
+            '主演' :star.get_text().strip()[3:],
+            '上映时间' :time.get_text().strip()[5:],
+            '分数':score1.get_text()+score2.get_text(),
+            'img' :img.get('data-src')
+        }
+        content.append(data)
+
+
+def main(offset):
+    url = 'http://maoyan.com/board/4?offset='+ str(offset)
+    get_one_page(url)
+
+if __name__ == '__main__':
+    for i in range(10):
+        main(i*10)
+    pd = pandas.DataFrame(content)
+    pd.to_csv('maoyan.csv')
